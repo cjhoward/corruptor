@@ -1,6 +1,6 @@
 # Corruptor
 
-This is a small utility program which will corrupt specified data in a file. It was created to assist in reverse engineering ROMs. There are currently four modes of corruption: random, fill, add, and bitshift.
+This is a small utility program which corrupts a specific range of data in a file. It was created to assist in reverse engineering ROMs. There are currently four modes of corruption: random, fill, add, and bitshift.
 
 ## Building
 
