@@ -13,10 +13,11 @@ This is a small utility program which corrupts a specific range of data in a fil
 	  -f <value>  fill with a specific value
 	  -a <value>  add a value to each byte
 	  -s <value>  bitshift each byte
+	  -n <value>  corrupt every nth byte
 
-The following example fills a block of data from 0x00000 to 0x7FFFF with the value 0x10:
+The following example fills every other byte in a block of data from 0x00000 to 0x7FFFF with the value 0x10:
 
-	corruptor -f 0x10 input.bin output.bin 0x00000 0x7FFFF
+	corruptor -f 0x10 -n 2 input.bin output.bin 0x00000 0x7FFFF
 
 ## License
 

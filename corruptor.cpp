@@ -35,11 +35,14 @@ void usage()
 "  -r          fill with random values\n"\
 "  -f <value>  fill with a specific value\n"\
 "  -a <value>  add a value to each byte\n"\
-"  -s <value>  bitshift each byte\n";
+"  -s <value>  bitshift each byte\n"\
+"  -n <value>  corrupt every nth byte\n";
 }
 
 int main(int argc, const char* argv[])
 {
+	std::srand(std::time(nullptr));
+
 	const char* input_arg = nullptr;
 	const char* output_arg = nullptr;
 	const char* start_arg = nullptr;
@@ -56,12 +59,14 @@ int main(int argc, const char* argv[])
 	int fill_value;
 	int add_value;
 	int shift_value;
-	int* mode_arg_table[] =
+	int skip_value = 1;
+	int* option_arg_table[] =
 	{
 		nullptr,
 		&fill_value,
 		&add_value,
-		&shift_value
+		&shift_value,
+		&skip_value
 	};
 
 	int current_arg = 0;
@@ -69,25 +74,33 @@ int main(int argc, const char* argv[])
 	{
 		if (argv[i][0] == '-' && std::strlen(argv[i]) == 2)
 		{
+			int option = 0;
 			switch (argv[i][1])
 			{
 				case 'r':
 					mode = MODE_RANDOM;
+					option = 0;
 					break;
 				case 'f':
 					mode = MODE_FILL;
+					option = 1;
 					break;
 				case 'a':
 					mode = MODE_ADD;
+					option = 2;
 					break;
 				case 's':
 					mode = MODE_SHIFT;
+					option = 3;
+					break;
+				case 'n':
+					option = 4;
 					break;
 				default:
 					break;
 			}
 
-			if (mode_arg_table[mode] != nullptr)
+			if (option_arg_table[option] != nullptr)
 			{
 				if (i + 1 >= argc)
 				{
@@ -95,7 +108,7 @@ int main(int argc, const char* argv[])
 					return EXIT_FAILURE;
 				}
 
-				*(mode_arg_table[mode]) = (int)std::stol(argv[++i], nullptr, 0);
+				*(option_arg_table[option]) = (int)std::stol(argv[++i], nullptr, 0);
 			}
 		}
 		else
@@ -118,14 +131,14 @@ int main(int argc, const char* argv[])
 	std::ifstream input(input_arg, std::ios::binary);
 	if (!input.is_open())
 	{
-		std::cerr << "Failed to open input file \"" << argv[1] << "\"" << std::endl;
+		std::cerr << "Failed to open input file \"" << input_arg << "\"" << std::endl;
 		return EXIT_FAILURE;
 	}
 
 	std::ofstream output(output_arg, std::ios::binary);
 	if (!output.is_open())
 	{
-		std::cerr << "Failed to ouput output file \"" << argv[2] << "\"" << std::endl;
+		std::cerr << "Failed to ouput output file \"" << output_arg << "\"" << std::endl;
 		return EXIT_FAILURE;
 	}
 
@@ -146,43 +159,47 @@ int main(int argc, const char* argv[])
 	input.seekg(start, input.beg);
 	output.clear();
 	output.seekp(start, output.beg);
+
 	unsigned long position = start;
+	unsigned long nth = skip_value;
+	char byte;
 
 	// Corrupt data
-	if (mode == MODE_RANDOM)
+	while (position <= end && input.get(byte))
 	{
-		std::srand(std::time(nullptr));
-		while (position++ <= end)
-			output.put((char)(rand() % 0xFF));
-	}
-	else if (mode == MODE_FILL)
-	{
-		char value = (char)fill_value;
-		while (position++ <= end)
-			output.put(value);
-	}
-	else if (mode == MODE_ADD)
-	{
-		char byte;
-		while (position++ <= end && input.get(byte))
+		// Every nth byte
+		if ((position - start) % nth == 0)
 		{
-			int value = (((int)byte) + add_value) % 0xFF;
-			output.put((char)value);
-		}
-	}
-	else if (mode == MODE_SHIFT)
-	{
-		char byte;
-		int shift = std::abs(shift_value);
-		while (position++ <= end && input.get(byte))
-		{
-			if (shift_value < 0)
-				byte <<= shift;
-			else
-				byte >>= shift;
+			switch (mode)
+			{
+				case MODE_RANDOM:
+					byte = (char)(rand() % 0xFF);
+					break;
 
-			output.put(byte);
+				case MODE_FILL:
+					byte = fill_value;
+					break;
+
+				case MODE_ADD:
+					byte = (char)((((int)byte) + add_value) % 0xFF);
+					break;
+
+				case MODE_SHIFT:
+				{
+					if (shift_value < 0)
+						byte <<= std::abs(shift_value);
+					else
+						byte >>= std::abs(shift_value);
+					break;
+				}
+
+				default:
+					break;
+			}
 		}
+
+		output.put(byte);
+		++position;
 	}
 
 	input.close();
