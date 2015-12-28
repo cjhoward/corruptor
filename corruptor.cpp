@@ -138,7 +138,7 @@ int main(int argc, const char* argv[])
 	std::ofstream output(output_arg, std::ios::binary);
 	if (!output.is_open())
 	{
-		std::cerr << "Failed to ouput output file \"" << output_arg << "\"" << std::endl;
+		std::cerr << "Failed to open output file \"" << output_arg << "\"" << std::endl;
 		return EXIT_FAILURE;
 	}
 
